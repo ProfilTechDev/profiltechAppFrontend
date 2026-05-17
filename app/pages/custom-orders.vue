@@ -1,37 +1,35 @@
 <script setup lang="ts">
-import type { TableColumn } from '@nuxt/ui'
-import type { CustomOrder, CustomOrderStatus } from '~/composables/useCustomOrders'
+import type { TableColumn, TableRow } from '@nuxt/ui'
+import type { CustomOrder } from '~/composables/useCustomOrders'
 
-const { orders } = useCustomOrders()
+const page = ref(1)
+const { orders, meta, status, refresh } = useCustomOrders(page)
 
 const columns: TableColumn<CustomOrder>[] = [
-  { accessorKey: 'orderNumber', header: 'Order #' },
-  { accessorKey: 'customer', header: 'Customer' },
-  { accessorKey: 'product', header: 'Product' },
-  { accessorKey: 'specifications', header: 'Specifications' },
-  { accessorKey: 'status', header: 'Status' },
-  { accessorKey: 'createdAt', header: 'Created' }
+  { accessorKey: 'wc_order_id', header: 'Order #' },
+  { accessorKey: 'wc_modified_at', header: 'Modified' }
 ]
 
-const statusColor: Record<CustomOrderStatus, 'neutral' | 'warning' | 'info' | 'success' | 'error'> = {
-  pending: 'warning',
-  in_production: 'info',
-  completed: 'success',
-  cancelled: 'error'
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleString('da-DK', {
+    dateStyle: 'short',
+    timeStyle: 'short'
+  })
 }
 
-const statusLabel: Record<CustomOrderStatus, string> = {
-  pending: 'Pending',
-  in_production: 'In production',
-  completed: 'Completed',
-  cancelled: 'Cancelled'
+const isModalOpen = ref(false)
+const selectedOrder = ref<CustomOrder | null>(null)
+
+function onSelect(_e: Event, row: TableRow<CustomOrder>) {
+  selectedOrder.value = row.original
+  isModalOpen.value = true
 }
 </script>
 
 <template>
   <UDashboardPanel id="custom-orders">
     <template #header>
-      <UDashboardNavbar title="Custom orders" :ui="{ right: 'gap-3' }">
+      <UDashboardNavbar title="Custom orders">
         <template #leading>
           <UDashboardSidebarCollapse />
         </template>
@@ -42,16 +40,30 @@ const statusLabel: Record<CustomOrderStatus, string> = {
       <UTable
         :data="orders"
         :columns="columns"
+        :loading="status === 'pending'"
+        :ui="{ 
+          tr: 'cursor-pointer',
+        }"
+        @select="onSelect"
       >
-        <template #status-cell="{ row }">
-          <UBadge
-            :color="statusColor[row.original.status]"
-            variant="subtle"
-          >
-            {{ statusLabel[row.original.status] }}
-          </UBadge>
+        <template #wc_modified_at-cell="{ row }">
+          {{ formatDate(row.original.wc_modified_at) }}
         </template>
       </UTable>
+
+      <div v-if="meta && meta.last_page > 1" class="flex justify-end pt-4">
+        <UPagination
+          v-model:page="page"
+          :total="meta.total"
+          :items-per-page="meta.per_page"
+        />
+      </div>
+
+      <CustomOrdersSendDialog
+        v-model:open="isModalOpen"
+        :order="selectedOrder"
+        @sent="refresh"
+      />
     </template>
   </UDashboardPanel>
 </template>

@@ -1,72 +1,86 @@
-export type CustomOrderStatus = 'pending' | 'in_production' | 'completed' | 'cancelled'
+import type { MaybeRefOrGetter } from 'vue'
+
+export interface CustomOrderLine {
+  id: number
+  name: string
+  quantity: number
+  is_custom: boolean
+}
 
 export interface CustomOrder {
   id: number
-  orderNumber: string
-  customer: string
-  product: string
-  specifications: string
-  status: CustomOrderStatus
-  createdAt: string
+  wc_order_id: number
+  wc_modified_at: string
+  customer_name: string
+  lines: CustomOrderLine[]
 }
 
-const mockOrders: CustomOrder[] = [
-  {
-    id: 1,
-    orderNumber: 'CO-2026-001',
-    customer: 'Hansen Møbler ApS',
-    product: 'Aluminium profile',
-    specifications: 'Length: 2450mm, RAL 7016',
-    status: 'in_production',
-    createdAt: '2026-05-10'
-  },
-  {
-    id: 2,
-    orderNumber: 'CO-2026-002',
-    customer: 'Nordic Interior A/S',
-    product: 'Cover plate',
-    specifications: 'Custom width: 87mm, anodized',
-    status: 'pending',
-    createdAt: '2026-05-12'
-  },
-  {
-    id: 3,
-    orderNumber: 'CO-2026-003',
-    customer: 'Byggematerialer ApS',
-    product: 'Corner profile',
-    specifications: 'RAL 9005 matte, length 3000mm',
-    status: 'completed',
-    createdAt: '2026-05-08'
-  },
-  {
-    id: 4,
-    orderNumber: 'CO-2026-004',
-    customer: 'Jensen & Søn',
-    product: 'U-profile',
-    specifications: 'Special angle 87°, brushed finish',
-    status: 'in_production',
-    createdAt: '2026-05-14'
-  },
-  {
-    id: 5,
-    orderNumber: 'CO-2026-005',
-    customer: 'Møbelfabrikken',
-    product: 'T-profile',
-    specifications: 'Length 1850mm, RAL 5012',
-    status: 'cancelled',
-    createdAt: '2026-05-06'
-  }
-]
+export interface PaginationMeta {
+  current_page: number
+  from: number
+  last_page: number
+  per_page: number
+  to: number
+  total: number
+  path: string
+}
 
-export function useCustomOrders() {
-  // TODO: replace with useFetch('/api/custom-orders') when backend is ready
-  const orders = ref<CustomOrder[]>(mockOrders)
-  const pending = ref(false)
-  const error = ref<Error | null>(null)
+export interface PaginatedResponse<T> {
+  data: T[]
+  meta: PaginationMeta
+  links: {
+    first: string | null
+    last: string | null
+    prev: string | null
+    next: string | null
+  }
+}
+
+export interface UpdateLinePayload {
+  id: number
+  quantity: number
+  included: boolean
+  thickness: number | null
+}
+
+export const THICKNESS_OPTIONS = [0.4, 0.5] as const
+export type Thickness = typeof THICKNESS_OPTIONS[number]
+
+export interface SendOrderPayload {
+  provider_id: string
+  subject: string
+  message: string
+}
+
+export function useCustomOrders(page: MaybeRefOrGetter<number> = 1) {
+  const { data, status, error, refresh } = useApiFetch<PaginatedResponse<CustomOrder>>('/custom-orders', {
+    query: { page },
+    errorTitle: 'Failed to load custom orders'
+  })
+
+  const client = useSanctumClient()
+
+  function updateLines(orderId: number, lines: UpdateLinePayload[]) {
+    return client<CustomOrder>(`/custom-orders/${orderId}`, {
+      method: 'PATCH',
+      body: { lines }
+    })
+  }
+
+  function sendOrder(orderId: number, payload: SendOrderPayload) {
+    return client(`/custom-orders/${orderId}/send`, {
+      method: 'POST',
+      body: payload
+    })
+  }
 
   return {
-    orders: readonly(orders),
-    pending: readonly(pending),
-    error: readonly(error)
+    orders: computed(() => data.value?.data ?? []),
+    meta: computed(() => data.value?.meta),
+    status,
+    error,
+    refresh,
+    updateLines,
+    sendOrder
   }
 }
