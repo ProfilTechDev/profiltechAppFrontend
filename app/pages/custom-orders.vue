@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { CustomOrder } from '~/composables/useCustomOrders'
+import { getSubmissionStatusMeta } from '~/config/submission-status'
 
 const page = ref(1)
 const { orders, meta, status, refresh } = useCustomOrders(page)
 
 const columns: TableColumn<CustomOrder>[] = [
   { accessorKey: 'wc_order_id', header: 'Order #' },
+  { accessorKey: 'customer', header: 'Kunde' },
+  { accessorKey: 'submission_status', header: 'Status' },
   { accessorKey: 'wc_modified_at', header: 'Modified' }
 ]
 
@@ -46,6 +49,18 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
         }"
         @select="onSelect"
       >
+        <template #customer-cell="{ row }">
+          {{ row.original.customer?.name ?? '(ukendt kunde)' }}
+        </template>
+
+        <template #submission_status-cell="{ row }">
+          <UBadge
+            variant="subtle"
+            :color="getSubmissionStatusMeta(row.original.submission_status).color"
+            :label="getSubmissionStatusMeta(row.original.submission_status).label"
+          />
+        </template>
+
         <template #wc_modified_at-cell="{ row }">
           {{ formatDate(row.original.wc_modified_at) }}
         </template>

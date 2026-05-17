@@ -14,7 +14,7 @@ const emit = defineEmits<{
   sent: []
 }>()
 
-const { updateLines, sendOrder } = useCustomOrders()
+const { updateLines, updateProvider, sendOrder, getSubmission } = useCustomOrders()
 const toast = useToast()
 
 const STEPS: StepperItem[] = [
@@ -26,6 +26,8 @@ const STEPS: StepperItem[] = [
 const currentStep = ref<string | number>('lines')
 const lineEdits = ref<LineEdit[]>([])
 const isSubmitting = ref(false)
+const isInitializing = ref(false)
+const isRestoring = ref(false)
 
 const formState = reactive<ProviderFormState>({
   providerId: PROVIDERS[0]!.id,
@@ -39,6 +41,8 @@ const selectedProvider = computed<Provider>(() =>
 )
 
 const includedLines = computed(() => lineEdits.value.filter(l => l.included))
+
+const isReadOnly = computed(() => props.order?.submission_status === 'sent')
 
 const providerItems = computed(() =>
   PROVIDERS.map(p => ({
@@ -54,20 +58,48 @@ function applyTemplate(customerName: string) {
   formState.message = template.body(formState.orderNumber, customerName)
 }
 
-function resetState(order: CustomOrder) {
-  currentStep.value = 'lines'
-  lineEdits.value = order.lines.map(l => ({
-    id: l.id,
-    name: l.name,
-    is_custom: l.is_custom,
-    quantity: l.quantity,
-    originalQuantity: l.quantity,
-    included: l.is_custom,
-    thickness: null
-  }))
-  formState.providerId = PROVIDERS[0]!.id
-  formState.orderNumber = String(order.wc_order_id)
-  applyTemplate(order.customer_name)
+async function resetState(order: CustomOrder) {
+  isInitializing.value = true
+  isRestoring.value = true
+  try {
+    currentStep.value = 'lines'
+    lineEdits.value = order.lines.map(l => ({
+      id: l.id,
+      name: l.name,
+      is_custom: l.is_custom,
+      quantity: l.quantity,
+      originalQuantity: l.quantity,
+      included: l.is_custom,
+      thickness: null
+    }))
+    formState.providerId = PROVIDERS[0]!.id
+    formState.orderNumber = String(order.wc_order_id)
+    applyTemplate(order.customer?.name ?? '(ukendt kunde)')
+
+    const submission = await getSubmission(order.id).catch(() => null)
+    if (!submission || !props.open || props.order?.id !== order.id) return
+
+    lineEdits.value = order.lines.map((l) => {
+      const saved = submission.lines?.find(s => s.id === l.id)
+      return {
+        id: l.id,
+        name: l.name,
+        is_custom: l.is_custom,
+        originalQuantity: l.quantity,
+        quantity: saved?.quantity ?? l.quantity,
+        included: saved?.included ?? l.is_custom,
+        thickness: (saved?.thickness as LineEdit['thickness']) ?? null
+      }
+    })
+    formState.providerId = submission.provider_id ?? formState.providerId
+    formState.subject = submission.subject ?? formState.subject
+    formState.message = submission.message ?? formState.message
+
+    if (order.submission_status === 'sent') currentStep.value = 'summary'
+  } finally {
+    isInitializing.value = false
+    isRestoring.value = false
+  }
 }
 
 watch(() => props.open, (isOpen) => {
@@ -75,8 +107,9 @@ watch(() => props.open, (isOpen) => {
 })
 
 watch(() => [formState.providerId, formState.orderNumber], () => {
-  if (props.order) applyTemplate(props.order.customer_name)
-})
+  if (isRestoring.value) return
+  if (props.order) applyTemplate(props.order.customer?.name ?? '(ukendt kunde)')
+}, { flush: 'sync' })
 
 function validateProviderForm(state: ProviderFormState): FormError[] {
   const errors: FormError[] = []
@@ -97,6 +130,15 @@ async function saveLines() {
   await updateLines(props.order.id, payload)
 }
 
+async function saveProvider() {
+  if (!props.order) return
+  await updateProvider(props.order.id, {
+    provider_id: formState.providerId,
+    subject: formState.subject,
+    message: formState.message
+  })
+}
+
 async function goNext() {
   if (isSubmitting.value) return
   isSubmitting.value = true
@@ -105,6 +147,7 @@ async function goNext() {
       await saveLines()
       currentStep.value = 'provider'
     } else if (currentStep.value === 'provider') {
+      await saveProvider()
       currentStep.value = 'summary'
     }
   } catch (err) {
@@ -168,69 +211,88 @@ const canGoNext = computed(() => {
 <template>
   <UModal
     :open="open"
-    :title="order ? `Send bestilling #${order.wc_order_id}` : ''"
+    :title="order ? `${isReadOnly ? 'Bestilling' : 'Send bestilling'} #${order.wc_order_id}` : ''"
     :ui="{ content: 'max-w-3xl' }"
     @update:open="emit('update:open', $event)"
   >
     <template #body>
       <div class="space-y-6">
         <UStepper
+          v-if="!isReadOnly"
           :model-value="currentStep"
           :items="STEPS"
           disabled
           class="w-full"
         />
 
-        <CustomOrdersStepLines
-          v-if="currentStep === 'lines'"
-          :lines="lineEdits"
-        />
+        <div v-if="isInitializing" class="flex justify-center py-12">
+          <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
+        </div>
 
-        <CustomOrdersStepProvider
-          v-else-if="currentStep === 'provider'"
-          :state="formState"
-          :provider-items="providerItems"
-          :validate="validateProviderForm"
-        />
+        <template v-else>
+          <CustomOrdersStepLines
+            v-if="currentStep === 'lines'"
+            :lines="lineEdits"
+          />
 
-        <CustomOrdersStepSummary
-          v-else-if="currentStep === 'summary'"
-          :state="formState"
-          :provider="selectedProvider"
-          :included-lines="includedLines"
-        />
+          <CustomOrdersStepProvider
+            v-else-if="currentStep === 'provider'"
+            :state="formState"
+            :provider-items="providerItems"
+            :validate="validateProviderForm"
+          />
+
+          <CustomOrdersStepSummary
+            v-else-if="currentStep === 'summary'"
+            :state="formState"
+            :provider="selectedProvider"
+            :included-lines="includedLines"
+          />
+        </template>
       </div>
     </template>
 
     <template #footer>
       <div class="flex w-full justify-between">
-        <UButton
-          v-if="currentStep !== 'lines'"
-          color="neutral"
-          variant="ghost"
-          label="Tilbage"
-          icon="i-lucide-arrow-left"
-          :disabled="isSubmitting"
-          @click="goPrev"
-        />
-        <span v-else />
+        <template v-if="isReadOnly">
+          <span />
+          <UButton
+            label="Luk"
+            color="neutral"
+            variant="subtle"
+            @click="emit('update:open', false)"
+          />
+        </template>
+        <template v-else>
+          <UButton
+            v-if="currentStep !== 'lines'"
+            color="neutral"
+            variant="ghost"
+            label="Tilbage"
+            icon="i-lucide-arrow-left"
+            :disabled="isSubmitting || isInitializing"
+            @click="goPrev"
+          />
+          <span v-else />
 
-        <UButton
-          v-if="currentStep !== 'summary'"
-          label="Gem og fortsæt"
-          trailing-icon="i-lucide-arrow-right"
-          :disabled="!canGoNext"
-          :loading="isSubmitting"
-          @click="goNext"
-        />
-        <UButton
-          v-else
-          label="Send bestilling"
-          icon="i-lucide-send"
-          color="primary"
-          :loading="isSubmitting"
-          @click="handleSend"
-        />
+          <UButton
+            v-if="currentStep !== 'summary'"
+            label="Gem og fortsæt"
+            trailing-icon="i-lucide-arrow-right"
+            :disabled="!canGoNext || isInitializing"
+            :loading="isSubmitting"
+            @click="goNext"
+          />
+          <UButton
+            v-else
+            label="Send bestilling"
+            icon="i-lucide-send"
+            color="primary"
+            :disabled="isInitializing"
+            :loading="isSubmitting"
+            @click="handleSend"
+          />
+        </template>
       </div>
     </template>
   </UModal>
