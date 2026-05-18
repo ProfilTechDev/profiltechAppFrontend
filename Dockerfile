@@ -47,9 +47,11 @@ ENV NODE_ENV=production \
 
 EXPOSE 3000
 
-# Use wget from busybox (bundled in node:alpine) for the healthcheck
+# TCP probe via Node — succeeds as long as something is listening on the port.
+# We deliberately avoid HTTP-level checks because Nuxt's `/` may redirect (302)
+# via the global Sanctum middleware, which BusyBox wget treats as an error.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-    CMD wget -qO- http://localhost:3000/ >/dev/null 2>&1 || exit 1
+    CMD node -e "require('net').createConnection(3000,'127.0.0.1').on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))"
 
 USER node
 
