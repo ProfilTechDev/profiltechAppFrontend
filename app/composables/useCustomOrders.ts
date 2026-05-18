@@ -87,9 +87,31 @@ export interface Submission {
   lines: SubmissionLine[]
 }
 
-export function useCustomOrders(page: MaybeRefOrGetter<number> = 1) {
+export interface UseCustomOrdersOptions {
+  page?: MaybeRefOrGetter<number>
+  status?: MaybeRefOrGetter<string>
+  search?: MaybeRefOrGetter<string>
+}
+
+export function useCustomOrders(options: UseCustomOrdersOptions = {}) {
+  const debouncedSearch = ref('')
+  let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+  watch(() => toValue(options.search) ?? '', (value) => {
+    if (searchTimer) clearTimeout(searchTimer)
+    searchTimer = setTimeout(() => {
+      debouncedSearch.value = value
+    }, 300)
+  }, { immediate: true })
+
+  const query = computed(() => ({
+    page: toValue(options.page) ?? 1,
+    'filter[status]': toValue(options.status) || undefined,
+    'filter[search]': debouncedSearch.value || undefined
+  }))
+
   const { data, status, error, refresh } = useApiFetch<PaginatedResponse<CustomOrder>>('/custom-orders', {
-    query: { page },
+    query,
     errorTitle: 'Failed to load custom orders'
   })
 
