@@ -14,7 +14,7 @@ const fields = [
     placeholder: 'you@example.com',
     autocomplete: 'email',
     required: true,
-    defaultValue: 'test@example.com'
+    defaultValue: ''
   },
   {
     name: 'password',
@@ -23,7 +23,7 @@ const fields = [
     placeholder: 'Password',
     autocomplete: 'current-password',
     required: true,
-    defaultValue: 'password'
+    defaultValue: ''
   }
 ]
 
