@@ -1,0 +1,50 @@
+# Version control
+.git
+.gitignore
+.github
+.gitattributes
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+
+# Dependencies & build artifacts (regenerated inside the image)
+node_modules
+.nuxt
+.nitro
+.output
+.cache
+.data
+dist
+
+# Editor & tooling
+.editorconfig
+.vscode
+.idea
+.fleet
+.zed
+*.swp
+*.swo
+.DS_Store
+
+# AI / agent metadata (not needed in image)
+.agents
+.claude
+.codex
+.mcp.json
+AGENTS.md
+CLAUDE.md
+skills-lock.json
+
+# Project docs
+README.md
+LICENSE
+
+# CI/lint config (not used at runtime)
+eslint.config.mjs
+renovate.json
+
+# Docker itself
+Dockerfile
+.dockerignore
