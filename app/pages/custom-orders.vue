@@ -10,14 +10,20 @@ const columns: TableColumn<CustomOrder>[] = [
   { accessorKey: 'wc_order_id', header: 'Order #' },
   { accessorKey: 'customer', header: 'Kunde' },
   { accessorKey: 'submission_status', header: 'Status' },
-  { accessorKey: 'wc_modified_at', header: 'Modified' }
+  { accessorKey: 'date_created', header: 'Ordredato' },
+  { accessorKey: 'total', header: 'Beløb' }
 ]
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('da-DK', {
-    dateStyle: 'short',
-    timeStyle: 'short'
-  })
+function formatDate(iso: string | null) {
+  if (!iso) return ''
+  return new Date(iso).toLocaleDateString('da-DK', { dateStyle: 'short' })
+}
+
+function formatCurrency(amount: string, currency: string) {
+  return new Intl.NumberFormat('da-DK', {
+    style: 'currency',
+    currency
+  }).format(Number(amount))
 }
 
 const isModalOpen = ref(false)
@@ -61,8 +67,12 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
           />
         </template>
 
-        <template #wc_modified_at-cell="{ row }">
-          {{ formatDate(row.original.wc_modified_at) }}
+        <template #date_created-cell="{ row }">
+          {{ formatDate(row.original.date_created) }}
+        </template>
+
+        <template #total-cell="{ row }">
+          {{ formatCurrency(row.original.total, row.original.currency) }}
         </template>
       </UTable>
 

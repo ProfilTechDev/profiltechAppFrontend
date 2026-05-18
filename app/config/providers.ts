@@ -1,26 +1,4 @@
-export type ProviderLanguage = 'da' | 'en'
-
-export interface Provider {
-  id: string
-  name: string
-  email: string
-  language: ProviderLanguage
-}
-
-export const PROVIDERS: Provider[] = [
-  {
-    id: 'byggprofiler',
-    name: 'Byggprofiler',
-    email: 'TODO@byggprofiler.dk',
-    language: 'da'
-  },
-  {
-    id: 'romania',
-    name: 'Romænien',
-    email: 'TODO@romania-provider.com',
-    language: 'en'
-  }
-]
+import type { ProviderLanguage } from '~/composables/useProviders'
 
 interface MessageTemplate {
   subject: (orderNumber: string) => string

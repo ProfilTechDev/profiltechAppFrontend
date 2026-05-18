@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { FormError, StepperItem } from '@nuxt/ui'
 import type { CustomOrder, UpdateLinePayload } from '~/composables/useCustomOrders'
-import { MESSAGE_TEMPLATES, PROVIDERS, type Provider } from '~/config/providers'
+import type { Provider } from '~/composables/useProviders'
+import { MESSAGE_TEMPLATES } from '~/config/providers'
 import type { LineEdit, ProviderFormState } from './types'
 
 const props = defineProps<{
@@ -15,6 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const { updateLines, updateProvider, sendOrder, getSubmission } = useCustomOrders()
+const { data: providers, refresh: refreshProviders } = useProviders()
 const toast = useToast()
 
 const STEPS: StepperItem[] = [
@@ -30,14 +32,14 @@ const isInitializing = ref(false)
 const isRestoring = ref(false)
 
 const formState = reactive<ProviderFormState>({
-  providerId: PROVIDERS[0]!.id,
+  providerId: '',
   orderNumber: '',
   subject: '',
   message: ''
 })
 
-const selectedProvider = computed<Provider>(() =>
-  PROVIDERS.find(p => p.id === formState.providerId) ?? PROVIDERS[0]!
+const selectedProvider = computed<Provider | null>(() =>
+  providers.value?.find(p => p.id === formState.providerId) ?? null
 )
 
 const includedLines = computed(() => lineEdits.value.filter(l => l.included))
@@ -45,7 +47,7 @@ const includedLines = computed(() => lineEdits.value.filter(l => l.included))
 const isReadOnly = computed(() => props.order?.submission_status === 'sent')
 
 const providerItems = computed(() =>
-  PROVIDERS.map(p => ({
+  (providers.value ?? []).map(p => ({
     label: `${p.name} (${p.language.toUpperCase()})`,
     description: p.email,
     value: p.id
@@ -53,7 +55,7 @@ const providerItems = computed(() =>
 )
 
 function applyTemplate(customerName: string) {
-  const template = MESSAGE_TEMPLATES[selectedProvider.value.language]
+  const template = MESSAGE_TEMPLATES[selectedProvider.value?.language ?? 'da']
   formState.subject = template.subject(formState.orderNumber)
   formState.message = template.body(formState.orderNumber, customerName)
 }
@@ -67,12 +69,15 @@ async function resetState(order: CustomOrder) {
       id: l.id,
       name: l.name,
       is_custom: l.is_custom,
+      has_thickness: l.has_thickness,
+      attributes: l.attributes,
       quantity: l.quantity,
       originalQuantity: l.quantity,
       included: l.is_custom,
       thickness: null
     }))
-    formState.providerId = PROVIDERS[0]!.id
+    if (!providers.value?.length) await refreshProviders()
+    formState.providerId = providers.value?.[0]?.id ?? ''
     formState.orderNumber = String(order.wc_order_id)
     applyTemplate(order.customer?.name ?? '(ukendt kunde)')
 
@@ -85,6 +90,8 @@ async function resetState(order: CustomOrder) {
         id: l.id,
         name: l.name,
         is_custom: l.is_custom,
+        has_thickness: l.has_thickness,
+        attributes: l.attributes,
         originalQuantity: l.quantity,
         quantity: saved?.quantity ?? l.quantity,
         included: saved?.included ?? l.is_custom,
@@ -179,7 +186,7 @@ async function handleSend() {
     })
     toast.add({
       title: 'Bestilling sendt',
-      description: `Sendt til ${selectedProvider.value.name}`,
+      description: `Sendt til ${selectedProvider.value?.name ?? 'provider'}`,
       color: 'success',
       icon: 'i-lucide-circle-check'
     })
@@ -201,7 +208,7 @@ async function handleSend() {
 const canGoNext = computed(() => {
   if (currentStep.value === 'lines') {
     return includedLines.value.length > 0
-      && includedLines.value.every(l => l.thickness !== null)
+      && includedLines.value.every(l => !l.has_thickness || l.thickness !== null)
   }
   if (currentStep.value === 'provider') return validateProviderForm(formState).length === 0
   return true

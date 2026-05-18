@@ -1,9 +1,11 @@
-import type { Thickness } from '~/composables/useCustomOrders'
+import type { OrderAttribute, Thickness } from '~/composables/useCustomOrders'
 
 export interface LineEdit {
   id: number
   name: string
   is_custom: boolean
+  has_thickness: boolean
+  attributes: OrderAttribute[]
   quantity: number
   originalQuantity: number
   included: boolean

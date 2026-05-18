@@ -7,47 +7,10 @@ export const mainMenu = [
     to: '/'
   },
   {
-    label: 'Inbox',
-    icon: 'i-lucide-inbox',
-    to: '/inbox',
-    badge: '4'
-  },
-  {
-    label: 'Customers',
-    icon: 'i-lucide-users',
-    to: '/customers'
-  },
-  {
-    label: 'Custom orders',
+    label: 'Bestillingsordrer',
     icon: 'i-lucide-ruler',
     to: '/custom-orders'
   },
-  {
-    label: 'Settings',
-    to: '/settings',
-    icon: 'i-lucide-settings',
-    defaultOpen: false,
-    type: 'trigger',
-    children: [
-      {
-        label: 'General',
-        to: '/settings',
-        exact: true
-      },
-      {
-        label: 'Members',
-        to: '/settings/members'
-      },
-      {
-        label: 'Notifications',
-        to: '/settings/notifications'
-      },
-      {
-        label: 'Security',
-        to: '/settings/security'
-      }
-    ]
-  }
 ] satisfies NavigationMenuItem[]
 
 export const secondaryMenu = [

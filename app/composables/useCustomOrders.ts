@@ -1,10 +1,19 @@
 import type { MaybeRefOrGetter } from 'vue'
 
+export interface OrderAttribute {
+  key: string
+  label: string
+  value: string
+  raw_value: string | null
+}
+
 export interface CustomOrderLine {
   id: number
   name: string
   quantity: number
   is_custom: boolean
+  has_thickness: boolean
+  attributes: OrderAttribute[]
 }
 
 export interface OrderCustomer {
@@ -18,7 +27,9 @@ export type SubmissionStatus = 'draft' | 'queued' | 'sent' | 'failed' | null
 export interface CustomOrder {
   id: number
   wc_order_id: number
-  wc_modified_at: string
+  currency: string
+  total: string
+  date_created: string | null
   customer: OrderCustomer | null
   submission_status: SubmissionStatus
   lines: CustomOrderLine[]

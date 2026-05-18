@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Provider } from '~/config/providers'
+import type { Provider } from '~/composables/useProviders'
 import type { LineEdit, ProviderFormState } from './types'
 
 defineProps<{
   state: ProviderFormState
-  provider: Provider
+  provider: Provider | null
   includedLines: LineEdit[]
 }>()
 </script>
@@ -13,7 +13,7 @@ defineProps<{
   <div class="space-y-4 text-sm">
     <div class="grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2">
       <span class="text-muted">Modtager</span>
-      <span>{{ provider.name }} — {{ provider.email }}</span>
+      <span>{{ provider ? `${provider.name} — ${provider.email}` : '—' }}</span>
       <span class="text-muted">Ordrenummer</span>
       <span>{{ state.orderNumber }}</span>
       <span class="text-muted">Emne</span>
@@ -29,10 +29,13 @@ defineProps<{
         <li
           v-for="line in includedLines"
           :key="line.id"
-          class="flex justify-between px-4 py-2"
+          class="flex items-start justify-between gap-4 px-4 py-2"
         >
-          <span>{{ line.name }}</span>
-          <span class="text-muted">
+          <div class="space-y-1">
+            <div>{{ line.name }}</div>
+            <CustomOrdersLineAttributes :attributes="line.attributes" />
+          </div>
+          <span class="whitespace-nowrap text-muted">
             <span v-if="line.thickness !== null">{{ line.thickness }} · </span>{{ line.quantity }} stk.
           </span>
         </li>
