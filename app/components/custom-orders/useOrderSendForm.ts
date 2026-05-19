@@ -186,6 +186,7 @@ export function useOrderSendForm({ order, open, onSent, onClose }: UseOrderSendF
         subject: formState.subject,
         message: formState.message
       })
+      order.value.submission_status = 'queued'
       toast.add({
         title: 'Bestilling sendt',
         description: `Sendt til ${selectedProvider.value?.name ?? 'provider'}`,

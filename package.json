@@ -14,8 +14,10 @@
     "@iconify-json/lucide": "^1.2.106",
     "@iconify-json/simple-icons": "^1.2.81",
     "@nuxt/ui": "^4.7.1",
+    "laravel-echo": "^2.3.4",
     "nuxt": "^4.4.5",
     "nuxt-auth-sanctum": "^3.0.0",
+    "pusher-js": "^8.5.0",
     "tailwindcss": "^4.3.0"
   },
   "devDependencies": {

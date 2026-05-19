@@ -9,6 +9,16 @@ const search = ref('')
 const apiStatusFilter = computed(() => statusFilter.value === 'all' ? '' : statusFilter.value)
 const { orders, meta, status, refresh } = useCustomOrders({ page, status: apiStatusFilter, search })
 
+const pendingOrderIds = computed(() =>
+  orders.value
+    .filter(o => o.submission_status === 'queued' || o.submission_status === 'draft')
+    .map(o => o.id)
+)
+
+useSubmissionChannels(pendingOrderIds, () => {
+  refresh()
+})
+
 const statusOptions = [
   { label: 'Alle status', value: 'all' },
   { label: 'Kladde', value: 'draft' },

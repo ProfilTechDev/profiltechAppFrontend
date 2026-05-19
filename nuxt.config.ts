@@ -47,6 +47,12 @@ export default defineNuxtConfig({
     public: {
       sanctum: {
         baseUrl: 'http://localhost:8000'
+      },
+      reverb: {
+        appKey: '',
+        host: '',
+        port: 8080,
+        scheme: 'http'
       }
     }
   },
