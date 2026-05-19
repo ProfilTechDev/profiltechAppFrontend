@@ -1,11 +1,16 @@
 <script setup lang="ts">
 import type { CustomOrder } from '~/composables/useCustomOrders'
+import { getSubmissionStatusMeta } from '~/config/submission-status'
 import { ORDER_SEND_STEPS, useOrderSendForm } from './useOrderSendForm'
 
 const props = defineProps<{
   open: boolean
   order: CustomOrder | null
 }>()
+
+const statusMeta = computed(() =>
+  props.order ? getSubmissionStatusMeta(props.order) : null
+)
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
@@ -44,6 +49,14 @@ const {
   >
     <template #body>
       <div class="space-y-6">
+        <div v-if="statusMeta" class="flex justify-end">
+          <UBadge
+            variant="subtle"
+            :color="statusMeta.color"
+            :label="statusMeta.label"
+          />
+        </div>
+
         <UStepper
           v-if="!isReadOnly"
           :model-value="currentStep"

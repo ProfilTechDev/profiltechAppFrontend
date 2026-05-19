@@ -97,8 +97,8 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
           <template #submission_status-cell="{ row }">
             <UBadge
               variant="subtle"
-              :color="getSubmissionStatusMeta(row.original.submission_status).color"
-              :label="getSubmissionStatusMeta(row.original.submission_status).label"
+              :color="getSubmissionStatusMeta(row.original).color"
+              :label="getSubmissionStatusMeta(row.original).label"
             />
           </template>
 

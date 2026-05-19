@@ -61,10 +61,10 @@ export default defineNuxtConfig({
     },
     redirect: {
       keepRequestedRoute: true,
-      onLogin: '/dashboard',
+      onLogin: '/',
       onLogout: '/login',
       onAuthOnly: '/login',
-      onGuestOnly: '/dashboard'
+      onGuestOnly: '/'
     },
     globalMiddleware: {
       enabled: true,

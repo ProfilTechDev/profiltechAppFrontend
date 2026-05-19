@@ -1,5 +1,5 @@
 import type { NavigationMenuItem } from '@nuxt/ui'
-import { mainMenu, secondaryMenu } from '~/config/menu'
+import { mainMenu } from '~/config/menu'
 
 export function useMenu(onItemSelect?: () => void) {
   const withOnSelect = (items: NavigationMenuItem[]): NavigationMenuItem[] =>
@@ -14,7 +14,6 @@ export function useMenu(onItemSelect?: () => void) {
     })
 
   return {
-    mainMenu: withOnSelect(mainMenu),
-    secondaryMenu
+    mainMenu: withOnSelect(mainMenu)
   }
 }

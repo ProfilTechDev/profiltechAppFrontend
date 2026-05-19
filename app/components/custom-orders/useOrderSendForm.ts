@@ -42,7 +42,9 @@ export function useOrderSendForm({ order, open, onSent, onClose }: UseOrderSendF
 
   const includedLines = computed(() => lineEdits.value.filter(l => l.included))
 
-  const isReadOnly = computed(() => order.value?.submission_status === 'sent')
+  const isReadOnly = computed(() =>
+    order.value?.submission_status === 'sent' || order.value?.status === 'completed'
+  )
 
   const providerItems = computed(() =>
     (providers.value ?? []).map(p => ({
@@ -100,7 +102,9 @@ export function useOrderSendForm({ order, open, onSent, onClose }: UseOrderSendF
       formState.subject = submission.subject ?? formState.subject
       formState.message = submission.message ?? formState.message
 
-      if (currentOrder.submission_status === 'sent') currentStep.value = 'summary'
+      if (currentOrder.submission_status === 'sent' || currentOrder.status === 'completed') {
+        currentStep.value = 'summary'
+      }
     } finally {
       isInitializing.value = false
       isRestoring.value = false

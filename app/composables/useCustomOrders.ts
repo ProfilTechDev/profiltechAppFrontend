@@ -27,6 +27,7 @@ export type SubmissionStatus = 'draft' | 'queued' | 'sent' | 'failed' | null
 export interface CustomOrder {
   id: number
   wc_order_id: number
+  status: string | null
   currency: string
   total: string
   date_created: string | null

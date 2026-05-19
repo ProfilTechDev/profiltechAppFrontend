@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const open = ref(false)
 
-const { mainMenu, secondaryMenu } = useMenu(() => {
+const { mainMenu } = useMenu(() => {
   open.value = false
 })
 </script>
@@ -14,7 +14,7 @@ const { mainMenu, secondaryMenu } = useMenu(() => {
       collapsible
       resizable
       class="bg-elevated/25"
-      :ui="{ footer: 'lg:border-t lg:border-default' }"
+      :ui="{ footer: 'lg:border-t lg:border-default', header: 'lg:border-b lg:border-default justify-center h-auto p-4' }"
     >
       <template #header>
         <AppLogo />
@@ -27,14 +27,6 @@ const { mainMenu, secondaryMenu } = useMenu(() => {
           orientation="vertical"
           tooltip
           popover
-        />
-
-        <UNavigationMenu
-          :collapsed="collapsed"
-          :items="secondaryMenu"
-          orientation="vertical"
-          tooltip
-          class="mt-auto"
         />
       </template>
 
