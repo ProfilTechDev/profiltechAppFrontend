@@ -5,10 +5,32 @@ import { getSubmissionStatusMeta } from '~/config/submission-status'
 
 const page = ref(1)
 const perPage = ref(20)
-const statusFilter = ref('all')
+const orderStatusFilter = ref('all')
+const submissionStatusFilter = ref('all')
 const search = ref('')
-const apiStatusFilter = computed(() => statusFilter.value === 'all' ? '' : statusFilter.value)
-const { orders, meta, status, refresh } = useCustomOrders({ page, perPage, status: apiStatusFilter, search })
+
+const apiOrderStatus = computed(() => orderStatusFilter.value === 'all' ? '' : orderStatusFilter.value)
+const apiSubmissionStatus = computed(() => submissionStatusFilter.value === 'all' ? '' : submissionStatusFilter.value)
+
+const { orders, meta, status, refresh } = useCustomOrders({
+  page,
+  perPage,
+  orderStatus: apiOrderStatus,
+  submissionStatus: apiSubmissionStatus,
+  search
+})
+
+const orderStatusOptions = [
+  { label: 'Alle ordrer', value: 'all' },
+  { label: 'Aktive', value: 'active' },
+  { label: 'Gennemført', value: 'completed' }
+]
+
+const submissionStatusOptions = [
+  { label: 'Alle afsendelser', value: 'all' },
+  { label: 'Ikke sendt', value: 'unsent' },
+  { label: 'Sendt', value: 'sent' }
+]
 
 const perPageOptions = [
   { label: '10', value: 10 },
@@ -27,15 +49,7 @@ useSubmissionChannels(pendingOrderIds, () => {
   refresh()
 })
 
-const statusOptions = [
-  { label: 'Alle status', value: 'all' },
-  { label: 'Kladde', value: 'draft' },
-  { label: 'I kø', value: 'queued' },
-  { label: 'Sendt', value: 'sent' },
-  { label: 'Fejlet', value: 'failed' }
-]
-
-watch([statusFilter, search, perPage], () => {
+watch([orderStatusFilter, submissionStatusFilter, search, perPage], () => {
   page.value = 1
 })
 
@@ -79,7 +93,7 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
     </template>
 
     <template #body>
-      <div class="overflow-hidden rounded-lg border border-default bg-default shadow-xs">
+      <div class="rounded-lg border border-default bg-default shadow-xs">
         <div class="flex flex-wrap items-center justify-between gap-3 border-b border-default bg-elevated/30 p-4">
           <UInput
             v-model="search"
@@ -88,13 +102,22 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
             size="lg"
             class="min-w-60 w-full max-w-80"
           />
-          <USelect
-            v-model="statusFilter"
-            :items="statusOptions"
-            icon="i-lucide-filter"
-            size="lg"
-            class="w-56"
-          />
+          <div class="flex flex-wrap items-center gap-3">
+            <USelect
+              v-model="orderStatusFilter"
+              :items="orderStatusOptions"
+              icon="i-lucide-package"
+              size="lg"
+              class="w-48"
+            />
+            <USelect
+              v-model="submissionStatusFilter"
+              :items="submissionStatusOptions"
+              icon="i-lucide-send"
+              size="lg"
+              class="w-48"
+            />
+          </div>
         </div>
 
         <UTable

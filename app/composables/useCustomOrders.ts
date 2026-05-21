@@ -84,7 +84,8 @@ export interface Submission {
 export interface UseCustomOrdersOptions {
   page?: MaybeRefOrGetter<number>
   perPage?: MaybeRefOrGetter<number>
-  status?: MaybeRefOrGetter<string>
+  orderStatus?: MaybeRefOrGetter<string>
+  submissionStatus?: MaybeRefOrGetter<string>
   search?: MaybeRefOrGetter<string>
 }
 
@@ -102,7 +103,8 @@ export function useCustomOrders(options: UseCustomOrdersOptions = {}) {
   const query = computed(() => ({
     page: toValue(options.page) ?? 1,
     per_page: toValue(options.perPage) ?? undefined,
-    'filter[status]': toValue(options.status) || undefined,
+    'filter[order_status]': toValue(options.orderStatus) || undefined,
+    'filter[submission_status]': toValue(options.submissionStatus) || undefined,
     'filter[search]': debouncedSearch.value || undefined
   }))
 
