@@ -4,10 +4,18 @@ import type { CustomOrder } from '~/composables/useCustomOrders'
 import { getSubmissionStatusMeta } from '~/config/submission-status'
 
 const page = ref(1)
+const perPage = ref(20)
 const statusFilter = ref('all')
 const search = ref('')
 const apiStatusFilter = computed(() => statusFilter.value === 'all' ? '' : statusFilter.value)
-const { orders, meta, status, refresh } = useCustomOrders({ page, status: apiStatusFilter, search })
+const { orders, meta, status, refresh } = useCustomOrders({ page, perPage, status: apiStatusFilter, search })
+
+const perPageOptions = [
+  { label: '10', value: 10 },
+  { label: '20', value: 20 },
+  { label: '50', value: 50 },
+  { label: '100', value: 100 }
+]
 
 const pendingOrderIds = computed(() =>
   orders.value
@@ -27,7 +35,7 @@ const statusOptions = [
   { label: 'Fejlet', value: 'failed' }
 ]
 
-watch([statusFilter, search], () => {
+watch([statusFilter, search, perPage], () => {
   page.value = 1
 })
 
@@ -125,9 +133,9 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
 
         <div
           v-if="meta"
-          class="flex flex-wrap items-center justify-between gap-3 border-t border-default px-4 py-3"
+          class="grid grid-cols-1 items-center gap-3 border-t border-default px-4 py-3 sm:grid-cols-3"
         >
-          <span class="text-sm text-muted">
+          <span class="text-sm text-muted sm:justify-self-start">
             Viser {{ meta.from ?? 0 }}–{{ meta.to ?? 0 }} af {{ meta.total }}
           </span>
           <UPagination
@@ -136,7 +144,18 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
             :total="meta.total"
             :items-per-page="meta.per_page"
             size="sm"
+            class="sm:justify-self-center"
           />
+          <span v-else class="hidden sm:block" />
+          <div class="flex items-center gap-2 sm:justify-self-end">
+            <span class="text-sm text-muted">Pr. side</span>
+            <USelect
+              v-model="perPage"
+              :items="perPageOptions"
+              size="sm"
+              class="w-20"
+            />
+          </div>
         </div>
       </div>
 

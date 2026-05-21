@@ -38,23 +38,16 @@ export interface CustomOrder {
 
 export interface PaginationMeta {
   current_page: number
-  from: number
+  from: number | null
   last_page: number
   per_page: number
-  to: number
+  to: number | null
   total: number
   path: string
 }
 
-export interface PaginatedResponse<T> {
+export interface PaginatedResponse<T> extends PaginationMeta {
   data: T[]
-  meta: PaginationMeta
-  links: {
-    first: string | null
-    last: string | null
-    prev: string | null
-    next: string | null
-  }
 }
 
 export interface UpdateLinePayload {
@@ -90,6 +83,7 @@ export interface Submission {
 
 export interface UseCustomOrdersOptions {
   page?: MaybeRefOrGetter<number>
+  perPage?: MaybeRefOrGetter<number>
   status?: MaybeRefOrGetter<string>
   search?: MaybeRefOrGetter<string>
 }
@@ -107,6 +101,7 @@ export function useCustomOrders(options: UseCustomOrdersOptions = {}) {
 
   const query = computed(() => ({
     page: toValue(options.page) ?? 1,
+    per_page: toValue(options.perPage) ?? undefined,
     'filter[status]': toValue(options.status) || undefined,
     'filter[search]': debouncedSearch.value || undefined
   }))
@@ -145,7 +140,19 @@ export function useCustomOrders(options: UseCustomOrdersOptions = {}) {
 
   return {
     orders: computed(() => data.value?.data ?? []),
-    meta: computed(() => data.value?.meta),
+    meta: computed<PaginationMeta | undefined>(() => {
+      const d = data.value
+      if (!d) return undefined
+      return {
+        current_page: d.current_page,
+        from: d.from,
+        last_page: d.last_page,
+        per_page: d.per_page,
+        to: d.to,
+        total: d.total,
+        path: d.path
+      }
+    }),
     status,
     error,
     refresh,

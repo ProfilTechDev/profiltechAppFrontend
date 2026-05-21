@@ -31,6 +31,12 @@ export default defineNuxtConfig({
     }
   },
 
+  vite: {
+    optimizeDeps: {
+      include: ['laravel-echo', 'pusher-js']
+    }
+  },
+
   // Runtime config — baseUrl is split into private and public because Nitro
   // (server-side SSR) reads `runtimeConfig.sanctum` while the browser reads
   // `runtimeConfig.public.sanctum`. In production this lets the SSR layer talk
