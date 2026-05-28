@@ -21,7 +21,9 @@ defineProps<{
     </div>
 
     <UFormField label="Besked">
-      <p class="whitespace-pre-wrap rounded-md border border-default bg-elevated p-3">{{ state.message }}</p>
+      <p class="whitespace-pre-wrap rounded-md border border-default bg-elevated p-3">
+        {{ state.message }}
+      </p>
     </UFormField>
 
     <UFormField :label="`Linjer (${includedLines.length})`">

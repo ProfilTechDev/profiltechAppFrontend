@@ -36,6 +36,5 @@ const { mainMenu } = useMenu(() => {
     </UDashboardSidebar>
 
     <slot />
-
   </UDashboardGroup>
 </template>

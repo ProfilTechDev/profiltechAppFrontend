@@ -56,7 +56,10 @@ async function onSubmit(event: { data: { email: string, password: string } }) {
       class="w-full max-w-md"
       @submit="onSubmit"
     >
-      <template v-if="errorMessage" #footer>
+      <template
+        v-if="errorMessage"
+        #footer
+      >
         <p class="text-sm text-red-500">
           {{ errorMessage }}
         </p>

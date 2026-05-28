@@ -14,7 +14,10 @@ function colorFor(attr: OrderAttribute): string | null {
 </script>
 
 <template>
-  <ul v-if="attributes.length" class="space-y-1 text-xs">
+  <ul
+    v-if="attributes.length"
+    class="space-y-1 text-xs"
+  >
     <li
       v-for="attr in attributes"
       :key="attr.key"

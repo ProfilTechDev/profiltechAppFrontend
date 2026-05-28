@@ -2,6 +2,7 @@
 import type { TableColumn, TableRow } from '@nuxt/ui'
 import type { CustomOrder } from '~/composables/useCustomOrders'
 import { getSubmissionStatusMeta } from '~/config/submission-status'
+import { TABLE_UI } from '~/config/table-ui'
 
 const page = ref(1)
 const perPage = ref(20)
@@ -9,16 +10,32 @@ const orderStatusFilter = ref('all')
 const submissionStatusFilter = ref('all')
 const search = ref('')
 
-const apiOrderStatus = computed(() => orderStatusFilter.value === 'all' ? '' : orderStatusFilter.value)
-const apiSubmissionStatus = computed(() => submissionStatusFilter.value === 'all' ? '' : submissionStatusFilter.value)
-
-const { orders, meta, status, refresh } = useCustomOrders({
+const { orders, meta, status, refresh, markReceived } = useCustomOrders({
   page,
   perPage,
-  orderStatus: apiOrderStatus,
-  submissionStatus: apiSubmissionStatus,
+  orderStatus: useAllSentinel(orderStatusFilter),
+  submissionStatus: useAllSentinel(submissionStatusFilter),
   search
 })
+
+const { run: receiveOrder } = useToastAction(markReceived, {
+  successTitle: 'Markeret som modtaget',
+  errorTitle: 'Kunne ikke markere som modtaget'
+})
+
+const receiving = ref(new Set<number>())
+
+async function markOrderReceived(event: Event, orderId: number) {
+  event.stopPropagation()
+  if (!confirm('Marker bestillingen som modtaget fra leverandøren? Ordren bliver klar til pakning.')) return
+  receiving.value.add(orderId)
+  try {
+    const result = await receiveOrder(orderId)
+    if (result !== undefined) refresh()
+  } finally {
+    receiving.value.delete(orderId)
+  }
+}
 
 const orderStatusOptions = [
   { label: 'Alle ordrer', value: 'all' },
@@ -30,13 +47,6 @@ const submissionStatusOptions = [
   { label: 'Alle afsendelser', value: 'all' },
   { label: 'Ikke sendt', value: 'unsent' },
   { label: 'Sendt', value: 'sent' }
-]
-
-const perPageOptions = [
-  { label: '10', value: 10 },
-  { label: '20', value: 20 },
-  { label: '50', value: 50 },
-  { label: '100', value: 100 }
 ]
 
 const pendingOrderIds = computed(() =>
@@ -94,41 +104,31 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
 
     <template #body>
       <div class="rounded-lg border border-default bg-default shadow-xs">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-default bg-elevated/30 p-4">
-          <UInput
-            v-model="search"
-            placeholder="Søg på ordre, kunde eller email"
-            icon="i-lucide-search"
+        <AppFilterBar
+          v-model:search="search"
+          search-placeholder="Søg på ordre, kunde eller email"
+        >
+          <USelect
+            v-model="orderStatusFilter"
+            :items="orderStatusOptions"
+            icon="i-lucide-package"
             size="lg"
-            class="min-w-60 w-full max-w-80"
+            class="w-48"
           />
-          <div class="flex flex-wrap items-center gap-3">
-            <USelect
-              v-model="orderStatusFilter"
-              :items="orderStatusOptions"
-              icon="i-lucide-package"
-              size="lg"
-              class="w-48"
-            />
-            <USelect
-              v-model="submissionStatusFilter"
-              :items="submissionStatusOptions"
-              icon="i-lucide-send"
-              size="lg"
-              class="w-48"
-            />
-          </div>
-        </div>
+          <USelect
+            v-model="submissionStatusFilter"
+            :items="submissionStatusOptions"
+            icon="i-lucide-send"
+            size="lg"
+            class="w-48"
+          />
+        </AppFilterBar>
 
         <UTable
           :data="orders"
           :columns="columns"
           :loading="status === 'pending'"
-          :ui="{
-            tr: 'cursor-pointer hover:bg-elevated/50 transition-colors',
-            th: 'bg-elevated/30 font-semibold',
-            td: 'py-3.5'
-          }"
+          :ui="TABLE_UI"
           @select="onSelect"
         >
           <template #customer-cell="{ row }">
@@ -136,11 +136,32 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
           </template>
 
           <template #submission_status-cell="{ row }">
-            <UBadge
-              variant="subtle"
-              :color="getSubmissionStatusMeta(row.original).color"
-              :label="getSubmissionStatusMeta(row.original).label"
-            />
+            <div class="flex items-center gap-2">
+              <UBadge
+                variant="subtle"
+                :color="getSubmissionStatusMeta(row.original).color"
+                :label="getSubmissionStatusMeta(row.original).label"
+              />
+              <UButton
+                v-if="row.original.submission_status === 'sent' && !row.original.submission_received_at"
+                size="xs"
+                variant="outline"
+                color="success"
+                icon="i-lucide-package-check"
+                :loading="receiving.has(row.original.id)"
+                @click="markOrderReceived($event, row.original.id)"
+              >
+                Modtaget
+              </UButton>
+              <UBadge
+                v-else-if="row.original.submission_received_at"
+                size="xs"
+                variant="soft"
+                color="success"
+                icon="i-lucide-package-check"
+                label="Modtaget"
+              />
+            </div>
           </template>
 
           <template #date_created-cell="{ row }">
@@ -154,32 +175,11 @@ function onSelect(_e: Event, row: TableRow<CustomOrder>) {
           </template>
         </UTable>
 
-        <div
-          v-if="meta"
-          class="grid grid-cols-1 items-center gap-3 border-t border-default px-4 py-3 sm:grid-cols-3"
-        >
-          <span class="text-sm text-muted sm:justify-self-start">
-            Viser {{ meta.from ?? 0 }}–{{ meta.to ?? 0 }} af {{ meta.total }}
-          </span>
-          <UPagination
-            v-if="meta.last_page > 1"
-            v-model:page="page"
-            :total="meta.total"
-            :items-per-page="meta.per_page"
-            size="sm"
-            class="sm:justify-self-center"
-          />
-          <span v-else class="hidden sm:block" />
-          <div class="flex items-center gap-2 sm:justify-self-end">
-            <span class="text-sm text-muted">Pr. side</span>
-            <USelect
-              v-model="perPage"
-              :items="perPageOptions"
-              size="sm"
-              class="w-20"
-            />
-          </div>
-        </div>
+        <AppPaginationFooter
+          v-model:page="page"
+          v-model:per-page="perPage"
+          :meta="meta"
+        />
       </div>
 
       <CustomOrdersSendDialog

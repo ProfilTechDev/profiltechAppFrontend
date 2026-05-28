@@ -61,20 +61,33 @@ const items = computed<DropdownMenuItem[][]>(() => [
         base: collapsed ? 'justify-center' : 'justify-start gap-2.5 px-2 py-1.5'
       }"
     >
-      <UAvatar :alt="displayName" :text="initials" size="sm" />
+      <UAvatar
+        :alt="displayName"
+        :text="initials"
+        size="sm"
+      />
       <template v-if="!collapsed">
         <span class="flex-1 min-w-0 text-left">
           <span class="block truncate text-sm font-medium text-default">{{ displayName }}</span>
-          <span v-if="displayEmail" class="block truncate text-xs text-muted font-normal">{{ displayEmail }}</span>
+          <span
+            v-if="displayEmail"
+            class="block truncate text-xs text-muted font-normal"
+          >{{ displayEmail }}</span>
         </span>
-        <UIcon name="i-lucide-chevrons-up-down" class="size-4 shrink-0 text-muted" />
+        <UIcon
+          name="i-lucide-chevrons-up-down"
+          class="size-4 shrink-0 text-muted"
+        />
       </template>
     </UButton>
 
     <template #account>
       <div class="flex flex-col gap-0.5">
         <span class="truncate text-sm font-medium text-default">{{ displayName }}</span>
-        <span v-if="displayEmail" class="truncate text-xs text-muted font-normal">{{ displayEmail }}</span>
+        <span
+          v-if="displayEmail"
+          class="truncate text-xs text-muted font-normal"
+        >{{ displayEmail }}</span>
       </div>
     </template>
   </UDropdownMenu>

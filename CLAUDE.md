@@ -57,6 +57,21 @@ nuxt.config.ts         # runtimeConfig, modules, vite tweaks
 - Use `<UDashboardPanel>` with `#header` (`UDashboardNavbar`) and `#body` slots for dashboard-style pages.
 - Page-level state (filters, pagination) lives in the page setup; composables stay generic and accept it as inputs.
 
+### Shared building blocks for list pages
+
+These wrap the repeating chrome on every paginated table page — use them instead of copying markup:
+
+| Building block | Use it for | Notes |
+|---|---|---|
+| `<AppFilterBar v-model:search :search-placeholder>` | The header bar with search input on the left, filter dropdowns slotted on the right. Set `:searchable="false"` if a page only needs filters. | Slot children are flex-row gapped. |
+| `<AppPaginationFooter v-model:page v-model:per-page :meta>` | The 3-column footer with count text, `UPagination`, and per-side select. Hides when `meta` is undefined. | Renders nothing when `meta` is falsy, so safe to mount unconditionally. |
+| `TABLE_UI` (`~/config/table-ui`) | The shared `:ui` overrides for `<UTable>` — same row hover, header weight, and cell padding across all tables. | Override individual keys via spread: `:ui="{ ...TABLE_UI, tr: 'hover:bg-elevated/40' }"`. |
+| `PER_PAGE_OPTIONS` (`~/config/table-ui`) | Standard `[10, 20, 50, 100]` dropdown options. | Already used internally by `AppPaginationFooter`. |
+| `useAllSentinel(ref)` | Translates the UI's `'all'` filter token into `''` for the API. Saves the `apiX = computed(...)` boilerplate. | Pass it directly to a composable's options: `orderStatus: useAllSentinel(orderStatusFilter)`. |
+| `useDebouncedRef(source, delay)` | Debounce a search input before it hits the API. | Already used internally by `useCustomOrders` and `useFulfillmentOrders`. |
+| `usePaginatedList<T>(url, options)` | Wraps `useApiFetch` and adapts Laravel's flat paginator response into `{ items, meta, status, error, refresh }`. | Use this as the base for any new paginated list composable. |
+| `useToastAction(action, { successTitle, errorTitle })` | Wraps an async mutation with toast + loading state. Resolves to `undefined` on failure. | Use the returned `run()` so you don't write try/catch/toast in every handler. |
+
 ## Auth — Sanctum cookie mode
 
 - Mode: `cookie` (configured in `nuxt.config.ts`). The server sets `XSRF-TOKEN` and session cookies; the browser sends them with `credentials: include`. **No Bearer tokens** — do not introduce them.
@@ -86,7 +101,7 @@ The Laravel API returns Laravel's flat paginator format:
   "path": "...", "links": [...]
 }
 ```
-**Not** wrapped in `meta`/`links` — adapter lives in `useCustomOrders` (`meta` computed). If a new endpoint follows the same shape, copy the pattern.
+**Not** wrapped in `meta`/`links`. Build new paginated list composables on `usePaginatedList<T>` — it handles the adapter once and exposes `{ items, meta, status, error, refresh }`.
 
 ### Filter conventions
 - Query params use Spatie-style `filter[key]=value` syntax.

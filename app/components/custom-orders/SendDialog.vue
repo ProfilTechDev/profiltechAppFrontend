@@ -14,7 +14,7 @@ const statusMeta = computed(() =>
 
 const emit = defineEmits<{
   'update:open': [value: boolean]
-  sent: []
+  'sent': []
 }>()
 
 const {
@@ -49,7 +49,10 @@ const {
   >
     <template #body>
       <div class="space-y-6">
-        <div v-if="statusMeta" class="flex justify-end">
+        <div
+          v-if="statusMeta"
+          class="flex justify-end"
+        >
           <UBadge
             variant="subtle"
             :color="statusMeta.color"
@@ -65,8 +68,14 @@ const {
           class="w-full"
         />
 
-        <div v-if="isInitializing" class="flex justify-center py-12">
-          <UIcon name="i-lucide-loader-circle" class="size-6 animate-spin text-muted" />
+        <div
+          v-if="isInitializing"
+          class="flex justify-center py-12"
+        >
+          <UIcon
+            name="i-lucide-loader-circle"
+            class="size-6 animate-spin text-muted"
+          />
         </div>
 
         <template v-else>

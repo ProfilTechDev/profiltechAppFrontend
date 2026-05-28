@@ -33,6 +33,7 @@ export interface CustomOrder {
   date_created: string | null
   customer: OrderCustomer | null
   submission_status: SubmissionStatus
+  submission_received_at: string | null
   lines: CustomOrderLine[]
 }
 
@@ -78,6 +79,7 @@ export interface Submission {
   subject: string | null
   message: string | null
   sent_at: string | null
+  received_at: string | null
   lines: SubmissionLine[]
 }
 
@@ -90,25 +92,17 @@ export interface UseCustomOrdersOptions {
 }
 
 export function useCustomOrders(options: UseCustomOrdersOptions = {}) {
-  const debouncedSearch = ref('')
-  let searchTimer: ReturnType<typeof setTimeout> | null = null
-
-  watch(() => toValue(options.search) ?? '', (value) => {
-    if (searchTimer) clearTimeout(searchTimer)
-    searchTimer = setTimeout(() => {
-      debouncedSearch.value = value
-    }, 300)
-  }, { immediate: true })
+  const debouncedSearch = useDebouncedRef(() => toValue(options.search) ?? '', 300)
 
   const query = computed(() => ({
-    page: toValue(options.page) ?? 1,
-    per_page: toValue(options.perPage) ?? undefined,
+    'page': toValue(options.page) ?? 1,
+    'per_page': toValue(options.perPage) ?? undefined,
     'filter[order_status]': toValue(options.orderStatus) || undefined,
     'filter[submission_status]': toValue(options.submissionStatus) || undefined,
     'filter[search]': debouncedSearch.value || undefined
   }))
 
-  const { data, status, error, refresh } = useApiFetch<PaginatedResponse<CustomOrder>>('/custom-orders', {
+  const { items: orders, meta, status, error, refresh } = usePaginatedList<CustomOrder>('/custom-orders', {
     query,
     errorTitle: 'Failed to load custom orders'
   })
@@ -140,27 +134,22 @@ export function useCustomOrders(options: UseCustomOrdersOptions = {}) {
     return client<Submission | null>(`/custom-orders/${orderId}/submission`)
   }
 
+  function markReceived(orderId: number) {
+    return client(`/custom-orders/${orderId}/submission/received`, {
+      method: 'POST'
+    })
+  }
+
   return {
-    orders: computed(() => data.value?.data ?? []),
-    meta: computed<PaginationMeta | undefined>(() => {
-      const d = data.value
-      if (!d) return undefined
-      return {
-        current_page: d.current_page,
-        from: d.from,
-        last_page: d.last_page,
-        per_page: d.per_page,
-        to: d.to,
-        total: d.total,
-        path: d.path
-      }
-    }),
+    orders,
+    meta,
     status,
     error,
     refresh,
     updateLines,
     updateProvider,
     sendOrder,
-    getSubmission
+    getSubmission,
+    markReceived
   }
 }

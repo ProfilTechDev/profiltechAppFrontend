@@ -12,9 +12,9 @@ export interface AppMenuItem extends NavigationMenuItem {
 
 export const mainMenu: AppMenuItem[] = [
   {
-      label: 'Menu',
-      type: 'label',
-      class: 'mt-3 font-light text-gray-500'
+    label: 'Menu',
+    type: 'label',
+    class: 'mt-3 font-light text-gray-500'
   },
   {
     label: 'Home',
@@ -28,14 +28,31 @@ export const mainMenu: AppMenuItem[] = [
     permissions: ['custom-orders.view']
   },
   {
-      label: 'Indstillinger',
-      type: 'label',
-      class: 'mt-4 font-light text-gray-500'
+    label: 'Levering',
+    icon: 'i-lucide-truck',
+    defaultOpen: true,
+    children: [
+      {
+        label: 'Ordreoverblik',
+        icon: 'i-lucide-clipboard-list',
+        to: '/ordreoverblik'
+      },
+      {
+        label: 'Selvdistribution',
+        icon: 'i-lucide-route',
+        to: '/selvdistribution'
+      }
+    ]
+  },
+  {
+    label: 'Indstillinger',
+    type: 'label',
+    class: 'mt-4 font-light text-gray-500'
   },
   {
     label: 'Brugere',
     icon: 'i-lucide-users',
     to: '/users',
     permissions: ['users.manage']
-  },
+  }
 ]

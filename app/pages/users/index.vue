@@ -2,6 +2,7 @@
 import type { DropdownMenuItem, TableColumn } from '@nuxt/ui'
 import type { User, UserStatusFilter } from '~/composables/useUsers'
 import { ALL_PERMISSIONS } from '~/config/permissions'
+import { TABLE_UI } from '~/config/table-ui'
 
 definePageMeta({
   middleware: ['can'],
@@ -14,16 +15,12 @@ const search = ref('')
 const statusFilter = ref<UserStatusFilter>('all')
 const permissionFilter = ref<string>('all')
 
-// Reka-UI's Select rejects empty-string option values, so 'all' is the
-// UI sentinel for "no filter" — translated to undefined for the API.
-const apiPermissionFilter = computed(() => permissionFilter.value === 'all' ? '' : permissionFilter.value)
-
 const { users, meta, status, refresh } = useUsers({
   page,
   perPage,
   search,
   status: statusFilter,
-  permission: apiPermissionFilter
+  permission: useAllSentinel(permissionFilter)
 })
 
 const { user: currentUser } = useAuthUser()
@@ -44,13 +41,6 @@ const statusOptions = [
 const permissionOptions = [
   { label: 'Alle områder', value: 'all' },
   ...ALL_PERMISSIONS.map(p => ({ label: p.label, value: p.key }))
-]
-
-const perPageOptions = [
-  { label: '10', value: 10 },
-  { label: '20', value: 20 },
-  { label: '50', value: 50 },
-  { label: '100', value: 100 }
 ]
 
 const columns: TableColumn<User>[] = [
@@ -209,41 +199,31 @@ function permissionLabel(key: string): string {
 
     <template #body>
       <div class="rounded-lg border border-default bg-default shadow-xs">
-        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-default bg-elevated/30 p-4">
-          <UInput
-            v-model="search"
-            placeholder="Søg på navn eller email"
-            icon="i-lucide-search"
+        <AppFilterBar
+          v-model:search="search"
+          search-placeholder="Søg på navn eller email"
+        >
+          <USelect
+            v-model="statusFilter"
+            :items="statusOptions"
+            icon="i-lucide-circle-dot"
             size="lg"
-            class="min-w-60 w-full max-w-80"
+            class="w-52"
           />
-          <div class="flex flex-wrap items-center gap-3">
-            <USelect
-              v-model="statusFilter"
-              :items="statusOptions"
-              icon="i-lucide-circle-dot"
-              size="lg"
-              class="w-52"
-            />
-            <USelect
-              v-model="permissionFilter"
-              :items="permissionOptions"
-              icon="i-lucide-shield-check"
-              size="lg"
-              class="w-56"
-            />
-          </div>
-        </div>
+          <USelect
+            v-model="permissionFilter"
+            :items="permissionOptions"
+            icon="i-lucide-shield-check"
+            size="lg"
+            class="w-56"
+          />
+        </AppFilterBar>
 
         <UTable
           :data="users"
           :columns="columns"
           :loading="status === 'pending'"
-          :ui="{
-            tr: 'hover:bg-elevated/40 transition-colors',
-            th: 'bg-elevated/30 font-semibold',
-            td: 'py-3.5'
-          }"
+          :ui="{ ...TABLE_UI, tr: 'hover:bg-elevated/40 transition-colors' }"
         >
           <template #name-cell="{ row }">
             <span class="font-medium text-default">{{ row.original.name }}</span>
@@ -296,35 +276,11 @@ function permissionLabel(key: string): string {
           </template>
         </UTable>
 
-        <div
-          v-if="meta"
-          class="grid grid-cols-1 items-center gap-3 border-t border-default px-4 py-3 sm:grid-cols-3"
-        >
-          <span class="text-sm text-muted sm:justify-self-start">
-            Viser {{ meta.from ?? 0 }}–{{ meta.to ?? 0 }} af {{ meta.total }}
-          </span>
-          <UPagination
-            v-if="meta.last_page > 1"
-            v-model:page="page"
-            :total="meta.total"
-            :items-per-page="meta.per_page"
-            size="sm"
-            class="sm:justify-self-center"
-          />
-          <span
-            v-else
-            class="hidden sm:block"
-          />
-          <div class="flex items-center gap-2 sm:justify-self-end">
-            <span class="text-sm text-muted">Pr. side</span>
-            <USelect
-              v-model="perPage"
-              :items="perPageOptions"
-              size="sm"
-              class="w-20"
-            />
-          </div>
-        </div>
+        <AppPaginationFooter
+          v-model:page="page"
+          v-model:per-page="perPage"
+          :meta="meta"
+        />
       </div>
 
       <UsersCreateDialog
